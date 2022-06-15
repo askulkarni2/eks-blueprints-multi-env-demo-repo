@@ -194,6 +194,7 @@ module "eks_blueprints_kubernetes_addons" {
   enable_cert_manager = true
   enable_vault        = true
   enable_external_dns = true
+  enable_vpa          = true
   #endregion
 
   #region Workload Onboarding
