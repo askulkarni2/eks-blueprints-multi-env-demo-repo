@@ -95,7 +95,7 @@ module "eks_blueprints" {
   #region Cluster attrs
   cluster_name    = coalesce(var.cluster_name, local.name)
   cluster_version = "1.21"
-  tags           = local.tags
+  tags            = local.tags
   #endregion
 
   #region VPC attrs
@@ -197,7 +197,7 @@ module "eks_blueprints_kubernetes_addons" {
   #endregion
 
   #region Workload Onboarding
-  enable_argocd       = true
+  enable_argocd = true
   argocd_applications = {
     workloads = {
       path     = "envs/dev"
