@@ -1,3 +1,4 @@
+#region Boilerplate
 provider "aws" {
   region = local.region
 }
@@ -83,6 +84,7 @@ locals {
     apiKey = var.datadog_api_key
   })]
 }
+#endregion
 
 #---------------------------------------------------------------
 # EKS Blueprints
@@ -90,12 +92,18 @@ locals {
 module "eks_blueprints" {
   source = "github.com/aws-ia/terraform-aws-eks-blueprints"
 
+  #region Cluster attrs
   cluster_name    = coalesce(var.cluster_name, local.name)
   cluster_version = "1.21"
+  tags           = local.tags
+  #endregion
 
+  #region VPC attrs
   vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.private_subnets
+  #endregion
 
+  #region MNG attrs
   managed_node_groups = {
     mg_5 = {
       node_group_name = "managed-ondemand"
@@ -104,7 +112,9 @@ module "eks_blueprints" {
       subnet_ids      = module.vpc.private_subnets
     }
   }
+  #endregion
 
+  #region MultiTenant Teams
   application_teams = {
     team-burnham = {
       "labels" = {
@@ -150,26 +160,28 @@ module "eks_blueprints" {
       users = [data.aws_caller_identity.current.arn]
     }
   }
-
-  tags = local.tags
+  #endregion
 }
 
 module "eks_blueprints_kubernetes_addons" {
   source = "github.com/aws-ia/terraform-aws-eks-blueprints//modules/kubernetes-addons"
 
+  #region Cluster attrs
   eks_cluster_id       = module.eks_blueprints.eks_cluster_id
   eks_cluster_endpoint = module.eks_blueprints.eks_cluster_endpoint
   eks_oidc_provider    = module.eks_blueprints.oidc_provider
   eks_cluster_version  = module.eks_blueprints.eks_cluster_version
   eks_cluster_domain   = var.eks_cluster_domain
+  tags                 = local.tags
+  #endregion
 
-
-  # EKS Managed Add-ons
+  #region EKS Managed Add-ons
   enable_amazon_eks_vpc_cni    = true
   enable_amazon_eks_coredns    = true
   enable_amazon_eks_kube_proxy = true
+  #endregion
 
-  # Add-ons
+  #region Self Managed Add-ons
   enable_aws_load_balancer_controller = true
   enable_metrics_server               = true
   enable_ingress_nginx                = true
@@ -182,6 +194,9 @@ module "eks_blueprints_kubernetes_addons" {
   enable_cert_manager = true
   enable_vault        = true
   enable_external_dns = true
+  #endregion
+
+  #region Workload Onboarding
   enable_argocd       = true
   argocd_applications = {
     workloads = {
@@ -196,10 +211,10 @@ module "eks_blueprints_kubernetes_addons" {
       }
     }
   }
-
-  tags = local.tags
+  #endregion
 }
 
+#region Additional Addons
 module "datadog" {
   source        = "github.com/aws-ia/terraform-aws-eks-blueprints//modules/kubernetes-addons/helm-addon"
   helm_config   = local.datadog_helm_config
@@ -219,6 +234,7 @@ resource "kubernetes_namespace_v1" "datadog" {
     }
   }
 }
+#endregion
 
 
 #---------------------------------------------------------------
